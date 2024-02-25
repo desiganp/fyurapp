@@ -1,2 +1,2 @@
-projects/01_fyyur/starter_code/.gitignore
-projects/01_fyyur/starter_code/env/
+.gitignore
+env/*

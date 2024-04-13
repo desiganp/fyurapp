@@ -109,31 +109,6 @@ def index():
 #  ----------------------------------------------------------------
 
 @app.route('/venues')
-# def venues():
-#     # Query all venues from the database
-#     venues = Venue.query.all()
-
-#     # Group venues by city and state
-#     areas = {}
-#     for venue in venues:
-#         key = (venue.city, venue.state)
-#         if key not in areas:
-#             areas[key] = {
-#                 "city": venue.city,
-#                 "state": venue.state,
-#                 "venues": []
-#             }
-#         areas[key]["venues"].append({
-#             "id": venue.id,
-#             "name": venue.name,
-#             "num_upcoming_shows": 1  # TODO: You need to calculate this field to your Venue model
-#         })
-
-#     # Convert the dictionary into a list of values
-#     data = list(areas.values())
-
-#     return render_template('pages/venues.html', areas=data)
-
 def venues():
     try:
         # Query all venues from the database
@@ -177,10 +152,6 @@ def venues():
         # Flash an error message or handle it in your preferred way
         return render_template('errors/500.html')
 
-
-
-
-
 from sqlalchemy import func  # Import SQLAlchemy function for case-insensitive search
 
 @app.route('/venues/search', methods=['POST'])
@@ -197,7 +168,7 @@ def search_venues():
         "data": [{
             "id": venue.id,
             "name": venue.name,
-            "upcoming_shows_count": 0  # Assuming num_upcoming_shows is available in your Venue model
+            "upcoming_shows_count": Show.query.filter_by(venue_id=venue.id).filter(Show.start_time > db.func.now()).count()
         } for venue in venues]
     }
 
@@ -207,7 +178,8 @@ def search_venues():
 def show_venue(venue_id):
     # Query the venue with the given venue_id from the database
     venue = Venue.query.get_or_404(venue_id)
-
+    # Query upcoming shows for the current venue
+    upcoming_shows_count = Show.query.filter_by(venue_id=venue.id).filter(Show.start_time > db.func.now()).count()
     # Format venue data
     data = {
         "id": venue.id,
@@ -225,7 +197,7 @@ def show_venue(venue_id):
         "past_shows": [],  # Initialize empty lists for past_shows and upcoming_shows
         "upcoming_shows": [],
         "past_shows_count": 0,
-        "upcoming_shows_count": 0
+        "upcoming_shows_count": upcoming_shows_count
     }
 
     # Populate past_shows and upcoming_shows if available in your Venue model
@@ -333,7 +305,7 @@ def search_artists():
             "data": [{
                 "id": artist.id,
                 "name": artist.name,
-                "upcoming_shows_count": 0,  # You can populate this field based on your application logic
+                "upcoming_shows_count": Show.query.filter_by(artist_id=artist.id).filter(Show.start_time > db.func.now()).count(),  # You can populate this field based on your application logic
             } for artist in artists]
         }
 
@@ -371,7 +343,7 @@ def show_artist(artist_id):
             "past_shows": [],
             "upcoming_shows": [],
             "past_shows_count": 0,
-            "upcoming_shows_count": 0
+            "upcoming_shows_count": Show.query.filter_by(artist_id=artist.id).filter(Show.start_time > db.func.now()).count()
         }
 
         # Render the template with the artist data

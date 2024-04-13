@@ -109,30 +109,77 @@ def index():
 #  ----------------------------------------------------------------
 
 @app.route('/venues')
+# def venues():
+#     # Query all venues from the database
+#     venues = Venue.query.all()
+
+#     # Group venues by city and state
+#     areas = {}
+#     for venue in venues:
+#         key = (venue.city, venue.state)
+#         if key not in areas:
+#             areas[key] = {
+#                 "city": venue.city,
+#                 "state": venue.state,
+#                 "venues": []
+#             }
+#         areas[key]["venues"].append({
+#             "id": venue.id,
+#             "name": venue.name,
+#             "num_upcoming_shows": 1  # TODO: You need to calculate this field to your Venue model
+#         })
+
+#     # Convert the dictionary into a list of values
+#     data = list(areas.values())
+
+#     return render_template('pages/venues.html', areas=data)
+
 def venues():
-    # Query all venues from the database
-    venues = Venue.query.all()
+    try:
+        # Query all venues from the database
+        venues = Venue.query.all()
 
-    # Group venues by city and state
-    areas = {}
-    for venue in venues:
-        key = (venue.city, venue.state)
-        if key not in areas:
-            areas[key] = {
-                "city": venue.city,
-                "state": venue.state,
-                "venues": []
-            }
-        areas[key]["venues"].append({
-            "id": venue.id,
-            "name": venue.name,
-            "num_upcoming_shows": 1  # TODO: You need to calculate this field to your Venue model
-        })
+        # Create a dictionary to store venue data grouped by city and state
+        areas = {}
 
-    # Convert the dictionary into a list of values
-    data = list(areas.values())
+        # Iterate over each venue
+        for venue in venues:
+            key = (venue.city, venue.state)
 
-    return render_template('pages/venues.html', areas=data)
+            # If the city-state combination does not exist in the dictionary, add it
+            if key not in areas:
+                areas[key] = {
+                    "city": venue.city,
+                    "state": venue.state,
+                    "venues": []
+                }
+
+            # Query upcoming shows for the current venue
+            upcoming_shows_count = Show.query.filter_by(venue_id=venue.id).filter(Show.start_time > db.func.now()).count()
+
+            print("upcoming shows count = ", upcoming_shows_count)
+
+            # Append venue data to the corresponding city-state entry in the dictionary
+            areas[key]["venues"].append({
+                "id": venue.id,
+                "name": venue.name,
+                "upcoming_shows_count": upcoming_shows_count
+            })
+
+        # Convert the dictionary into a list of values
+        data = list(areas.values())
+
+        # Render the template with the venue data
+        return render_template('pages/venues.html', areas=data)
+    except Exception as e:
+        # Handle any exceptions
+        print(f"Error retrieving venues: {str(e)}")
+        # Flash an error message or handle it in your preferred way
+        return render_template('errors/500.html')
+
+
+
+
 
 from sqlalchemy import func  # Import SQLAlchemy function for case-insensitive search
 
@@ -150,7 +197,7 @@ def search_venues():
         "data": [{
             "id": venue.id,
             "name": venue.name,
-            "num_upcoming_shows": 0  # Assuming num_upcoming_shows is available in your Venue model
+            "upcoming_shows_count": 0  # Assuming num_upcoming_shows is available in your Venue model
         } for venue in venues]
     }
 
@@ -286,7 +333,7 @@ def search_artists():
             "data": [{
                 "id": artist.id,
                 "name": artist.name,
-                "num_upcoming_shows": 0,  # You can populate this field based on your application logic
+                "upcoming_shows_count": 0,  # You can populate this field based on your application logic
             } for artist in artists]
         }
 
@@ -473,45 +520,37 @@ def create_artist_submission():
 
 @app.route('/shows')
 def shows():
-  # displays list of shows at /shows
-  # TODO: replace with real venues data.
-  data=[{
-    "venue_id": 1,
-    "venue_name": "The Musical Hop",
-    "artist_id": 4,
-    "artist_name": "Guns N Petals",
-    "artist_image_link": "https://images.unsplash.com/photo-1549213783-8284d0336c4f?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=300&q=80",
-    "start_time": "2019-05-21T21:30:00.000Z"
-  }, {
-    "venue_id": 3,
-    "venue_name": "Park Square Live Music & Coffee",
-    "artist_id": 5,
-    "artist_name": "Matt Quevedo",
-    "artist_image_link": "https://images.unsplash.com/photo-1495223153807-b916f75de8c5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=334&q=80",
-    "start_time": "2019-06-15T23:00:00.000Z"
-  }, {
-    "venue_id": 3,
-    "venue_name": "Park Square Live Music & Coffee",
-    "artist_id": 6,
-    "artist_name": "The Wild Sax Band",
-    "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
-    "start_time": "2035-04-01T20:00:00.000Z"
-  }, {
-    "venue_id": 3,
-    "venue_name": "Park Square Live Music & Coffee",
-    "artist_id": 6,
-    "artist_name": "The Wild Sax Band",
-    "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
-    "start_time": "2035-04-08T20:00:00.000Z"
-  }, {
-    "venue_id": 3,
-    "venue_name": "Park Square Live Music & Coffee",
-    "artist_id": 6,
-    "artist_name": "The Wild Sax Band",
-    "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
-    "start_time": "2035-04-15T20:00:00.000Z"
-  }]
-  return render_template('pages/shows.html', shows=data)
+    try:
+        # Query the database to retrieve all show records
+        shows = db.session.query(Show).all()
+
+        # Create a list to store the formatted show data
+        data = []
+
+        # Iterate over each show record and format its data
+        for show in shows:
+            venue = Venue.query.get(show.venue_id)
+            artist = Artist.query.get(show.artist_id)
+
+            show_data = {
+                "venue_id": venue.id,
+                "venue_name": venue.name,
+                "artist_id": artist.id,
+                "artist_name": artist.name,
+                "artist_image_link": artist.image_link,
+                "start_time": str(show.start_time)  # Convert datetime to string
+            }
+            data.append(show_data)
+
+        # Render the template with the show data
+        return render_template('pages/shows.html', shows=data)
+    except Exception as e:
+        # Handle any exceptions
+        print(f"Error retrieving shows: {str(e)}")
+        # Flash an error message or handle it in your preferred way
+        return render_template('errors/500.html')
+
+
 
 @app.route('/shows/create')
 def create_shows():
@@ -521,15 +560,35 @@ def create_shows():
 
 @app.route('/shows/create', methods=['POST'])
 def create_show_submission():
-  # called to create new shows in the db, upon submitting new show listing form
-  # TODO: insert form data as a new Show record in the db, instead
-
-  # on successful db insert, flash success
-  flash('Show was successfully listed!')
-  # TODO: on unsuccessful db insert, flash an error instead.
-  # e.g., flash('An error occurred. Show could not be listed.')
-  # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
+    
+  form = ShowForm(request.form)
+  print(request.form)  # This will print the whole form data to console
+  #show_name = request.form.get('name')
+  #print("show_name received: ", show_name)
+  if form.validate():
+      try:
+          new_show = Show(
+              start_time = form.start_time.data,
+              artist_id = form.artist_id.data,
+              venue_id = form.venue_id.data
+          )
+          db.session.add(new_show)
+          db.session.commit()
+          # Flash a success message
+          flash('Show was successfully listed!')
+          
+      except Exception as e:
+          db.session.rollback()
+          # Flash an error message
+          flash('An error occurred. Show could not be listed.')
+          print(e)
+      finally:
+          db.session.close()
+  else:
+      flash('An error occurred. Show could not be listed. Form validation failed.')
+  
   return render_template('pages/home.html')
+
 
 @app.errorhandler(404)
 def not_found_error(error):

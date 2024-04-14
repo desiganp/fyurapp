@@ -271,7 +271,7 @@ def search_artists():
 def show_artist(artist_id):
     try:
         # Query the database to get the artist with the given artist_id
-        artist = Artist.query.get(artist_id)
+        artist = Artist.query.get_or_404(artist_id)
 
         # If artist is not found, return a 404 error
         if not artist:
@@ -281,7 +281,7 @@ def show_artist(artist_id):
         data = {
             "id": artist.id,
             "name": artist.name,
-            "genres": artist.genres.split(','),
+            "genres": artist.genres,
             "city": artist.city,
             "state": artist.state,
             "phone": artist.phone,

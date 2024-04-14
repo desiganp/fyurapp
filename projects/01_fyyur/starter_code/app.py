@@ -21,6 +21,7 @@ from flask_wtf import Form
 from forms import *
 from flask_migrate import Migrate
 from models import db, Venue, Artist, Show
+from datetime import datetime
 
 #----------------------------------------------------------------------------#
 # App Config.
@@ -128,8 +129,22 @@ def search_venues():
 def show_venue(venue_id):
     # Query the venue with the given venue_id from the database
     venue = Venue.query.get_or_404(venue_id)
-    # Query upcoming shows for the current venue
-    upcoming_shows_count = Show.query.filter_by(venue_id=venue.id).filter(Show.start_time > db.func.now()).count()
+
+    past_shows = []
+    upcoming_shows = []
+
+    for show in venue.shows:
+        temp_show = {
+            'artist_id' : show.artist_id,
+            'artist_name' : show.artist.name,
+            'artist_image_link' : show.artist.image_link,
+            'start_time' : show.start_time.strftime("%m/%d/%Y, %H:%M")
+        }
+        if show.start_time <= datetime.now():
+            past_shows.append(temp_show)
+        else:
+            upcoming_shows.append(temp_show)
+
     # Format venue data
     data = {
         "id": venue.id,
@@ -144,10 +159,10 @@ def show_venue(venue_id):
         "seeking_talent": venue.looking_for_talent,
         "seeking_description": venue.seeking_description,
         "image_link": venue.image_link,
-        "past_shows": [],  # Initialize empty lists for past_shows and upcoming_shows
-        "upcoming_shows": [],
-        "past_shows_count": 0,
-        "upcoming_shows_count": upcoming_shows_count
+        "past_shows": past_shows,  # Initialize empty lists for past_shows and upcoming_shows
+        "upcoming_shows": upcoming_shows,
+        "past_shows_count": len(past_shows),
+        "upcoming_shows_count": len(upcoming_shows)
     }
 
     # Populate past_shows and upcoming_shows if available in your Venue model
@@ -276,6 +291,22 @@ def show_artist(artist_id):
         # If artist is not found, return a 404 error
         if not artist:
             return render_template('errors/404.html'), 404
+        
+        past_shows = []
+        upcoming_shows = []
+
+        for show in artist.shows:
+          temp_show = {
+            'artist_id' : show.artist_id,
+            'artist_name' : show.artist.name,
+            'artist_image_link' : show.artist.image_link,
+            'start_time' : show.start_time.strftime("%m/%d/%Y, %H:%M")
+            }
+          if show.start_time <= datetime.now():
+            past_shows.append(temp_show)
+          else:
+            upcoming_shows.append(temp_show)
+
 
         # Convert the queried data into the format required by the template
         data = {
@@ -290,10 +321,10 @@ def show_artist(artist_id):
             "seeking_venue": artist.looking_for_venues,
             "seeking_description": artist.seeking_description,
             "image_link": artist.image_link,
-            "past_shows": [],
-            "upcoming_shows": [],
-            "past_shows_count": 0,
-            "upcoming_shows_count": Show.query.filter_by(artist_id=artist.id).filter(Show.start_time > db.func.now()).count()
+            "past_shows": past_shows,
+            "upcoming_shows": upcoming_shows,
+            "past_shows_count": len(past_shows),
+            "upcoming_shows_count": len(upcoming_shows)
         }
 
         # Render the template with the artist data

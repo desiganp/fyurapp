@@ -431,42 +431,39 @@ def create_artist_form():
 @app.route('/artists/create', methods=['POST'])
 def create_artist_submission():
     # Extract form data
-    name = request.form['name']
-    city = request.form['city']
-    state = request.form['state']
-    phone = request.form['phone']
-    genres = request.form['genres']
-    image_link = request.form['image_link']
-    facebook_link = request.form['facebook_link']
-    website_link = request.form['website_link']
-    looking_for_venues = True if request.form.get('looking_for_venues') == 'y' else False
-    seeking_description = request.form['seeking_description']
+    form = ArtistForm(request.form, meta={"csrf" : False})
+    if form.validate():
+        try :
+          artist = Artist(
+              name=form.name.data, 
+              city=form.city.data, 
+              state=form.state.data, 
+              phone=form.phone.data, 
+              genres=form.genres.data,
+              image_link=form.image_link.data, 
+              facebook_link=form.facebook_link.data, 
+              website_link=form.website_link.data,
+              looking_for_venues=form.seeking_venue.data, 
+              seeking_description=form.seeking_description.data
+              )
+          # Add the new artist to the session
+          db.session.add(artist)
+          # Commit the session to insert the new artist into the database
+          db.session.commit()
 
-    print("Adding artist to db : " + name)
-
-    try:
-        # Create a new Artist instance with the form data
-        artist = Artist(name=name, city=city, state=state, phone=phone, genres=genres,
-                        image_link=image_link, facebook_link=facebook_link, website_link=website_link,
-                        looking_for_venues=looking_for_venues, seeking_description=seeking_description)
-        # Add the new artist to the session
-        db.session.add(artist)
-        # Commit the session to insert the new artist into the database
-        db.session.commit()
-
-        # Flash a success message
-        flash('Artist ' + name + ' was successfully listed!')
-        return render_template('pages/home.html')
-    except Exception as e:
-        # Rollback the session in case of an error
-        db.session.rollback()
-        # Flash an error message
-        flash('An error occurred. Artist ' + name + ' could not be listed.')
-        print(f"Error inserting artist: {str(e)}")
-        return render_template('pages/home.html')
-    finally:
-        # Close the session
-        db.session.close()
+          # Flash a success message
+          flash('Artist was successfully listed!')
+          return render_template('pages/home.html')
+        except Exception as e:
+          # Rollback the session in case of an error
+          db.session.rollback()
+          # Flash an error message
+          flash('An error occurred. Artist ' + name + ' could not be listed.')
+          print(f"Error inserting artist: {str(e)}")
+          return render_template('pages/home.html')
+        finally:
+          # Close the session
+          db.session.close()
 
 #  Shows
 #  ----------------------------------------------------------------
